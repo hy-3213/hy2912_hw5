@@ -1,0 +1,95 @@
+title: "p8105_hw5_hy2912"
+author: "Helen Yousaf"
+date: "2024-11-05"
+output: html_document
+---
+# Problem 2 
+```{r}
+library(tidyverse)
+library(rvest)
+library(broom)
+library(ggplot2)
+library(dplyr)
+```
+
+## Setting parameters 
+
+```{r}
+n <- 30
+sigma <- 5
+mu <- 0
+alpha <- 0.05 
+num_datasets <- 5000
+```
+
+## Vectors 
+```{r}
+mu_hat <- numeric(num_datasets)
+p_values <- numeric(num_datasets)
+```
+
+## Simulation 
+```{r}
+set.seed(123) # For reproducibility 
+for (i in 1:num_datasets) {
+  # Generate data 
+ x <- rnorm(30, mean = 0, sd = 5)
+ 
+ # Conduct t-test 
+ t_test_results <- t.test (x, mu=0)
+ 
+ # Estimate and p-value 
+  tidy_result <- tidy(t_test_results)
+  mu_hat[i] <- tidy_result$estimate
+  p_values[i] <- tidy_result$p.value
+}
+```
+
+## Repeating for various mu values
+```{r}
+set.seed(12)
+n <- 30
+sigma <- 5
+mu_values <- 1:6
+num_datasets <- 5000
+alpha <- 0.05
+```
+
+```{r}
+power_results <- data.frame(mu = mu_values, power = numeric(length(mu_values)), avg_estimate = numeric(length(mu_values)), avg_estimate_rejected = numeric(length(mu_values)))
+
+for (i in seq_along(mu_values)) {
+  mu <- mu_values[i]
+  p_values <- numeric(num_datasets)
+  estimates <- numeric(num_datasets)
+  
+  for (j in 1:num_datasets) {
+    x <- rnorm(n, mean = mu, sd = sigma)
+    test_result <- t.test(x, mu = 0)
+    tidy_result <- tidy(test_result)
+    p_values[j] <- tidy_result$p.value
+    estimates[j] <- tidy_result$estimate
+  }
+  
+  power_results$power[i] <- mean(p_values < alpha)
+  power_results$avg_estimate[i] <- mean(estimates)
+  power_results$avg_estimate_rejected[i] <- mean(estimates[p_values < alpha])
+}
+```
+```{r}
+ggplot(power_results, aes(x = mu)) +
+  geom_line(aes(y = power), color = "blue") +
+  labs(y = "Power", x = "True Value of μ") +
+  ggtitle("Power of One-Sample t-Test")
+
+ggplot(power_results, aes(x = mu)) +
+  geom_line(aes(y = avg_estimate), color = "red") +
+  geom_line(aes(y = avg_estimate_rejected), color = "green") +
+  labs(y = "Average Estimate of μ̂", x = "True Value of μ") +
+  ggtitle("Average Estimate of μ̂ vs True Value of μ") +
+  scale_color_manual(values = c("red", "green"), labels = c("Avg Estimate", "Avg Estimate (Null Rejected)")) +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(title = "Legend"))
+```
+
+
