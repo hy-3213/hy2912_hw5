@@ -91,5 +91,39 @@ ggplot(power_results, aes(x = mu)) +
   theme(legend.position = "bottom") +
   guides(color = guide_legend(title = "Legend"))
 ```
+# Problem 3 
+
+```{r}
+library(purrr)
+```
+
+## Loading dataset
+```{r}
+url <- "https://raw.githubusercontent.com/washingtonpost/data-homicides/refs/heads/master/homicide-data.csv"
+data <- read.csv(url)
+```
+
+## Creating a city_state variable
+```{r}
+data <- data %>%
+  mutate(city_state = paste(city, state, sep = ", "))
+```
+
+## Summarizing homicides
+```{r}
+summary_data <- data %>%
+  group_by(city_state) %>%
+  summarize(total_homicides = n(),
+            unsolved_homicides = sum(disposition %in% c("Closed without arrest", "Open/No arrest")))
+```
+
+## Estimating proportion of unsolved homicides for Baltimore, MD
+```{r}
+baltimore_result <- prop.test(summary_data$unsolved_homicides[summary_data$city_state == "Baltimore, MD"],
+                               summary_data$total_homicides[summary_data$city_state == "Baltimore, MD"])
+
+baltimore_tidy <- broom::tidy(baltimore_result) %>%
+  select(estimate, conf.low, conf.high)
+```
 
 
