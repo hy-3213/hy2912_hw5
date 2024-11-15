@@ -1,0 +1,56 @@
+```{r}
+library(broom)
+library(ggplot2)
+library(dplyr)
+
+set.seed(123)
+
+n <- 30
+sigma <- 5
+mu_values <- 0:6
+alpha <- 0.05
+num_simulations <- 5000
+
+results <- data.frame()
+
+for (mu in mu_values) {
+  for (i in 1:num_simulations) {
+    x <- rnorm(n, mean = mu, sd = sigma)
+    test_result <- tidy(t.test(x, mu = 0))
+    results <- rbind(results, data.frame(
+      mu_true = mu,
+      mu_hat = test_result$estimate,
+      p_value = test_result$p.value
+    ))
+  }
+}
+
+# Calculate power and average estimates
+power_results <- results %>%
+  group_by(mu_true) %>%
+  summarize(
+    power = mean(p_value < alpha),
+    avg_mu_hat = mean(mu_hat),
+    avg_mu_hat_rejected = mean(mu_hat[p_value < alpha])
+  )
+
+# Plot power vs true mu
+p1 <- ggplot(power_results, aes(x = mu_true, y = power)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Power vs True Mu", x = "True Mu", y = "Power")
+
+# Plot average mu_hat vs true mu
+p2 <- ggplot(power_results, aes(x = mu_true)) +
+  geom_line(aes(y = avg_mu_hat), color = "blue") +
+  geom_point(aes(y = avg_mu_hat), color = "blue") +
+  geom_line(aes(y = avg_mu_hat_rejected), color = "red") +
+  geom_point(aes(y = avg_mu_hat_rejected), color = "red") +
+  labs(title = "Average Mu_hat vs True Mu", x = "True Mu", y = "Average Mu_hat") +
+  scale_color_manual(values = c("blue" = "Average Mu_hat", "red" = "Average Mu_hat (Rejected)"))
+
+# Combine plots
+library(gridExtra)
+grid.arrange(p1, p2, ncol = 1)
+```
+

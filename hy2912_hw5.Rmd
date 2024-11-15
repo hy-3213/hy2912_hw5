@@ -76,6 +76,7 @@ for (i in seq_along(mu_values)) {
   power_results$avg_estimate_rejected[i] <- mean(estimates[p_values < alpha])
 }
 ```
+
 ```{r}
 ggplot(power_results, aes(x = mu)) +
   geom_line(aes(y = power), color = "blue") +
@@ -91,7 +92,12 @@ ggplot(power_results, aes(x = mu)) +
   theme(legend.position = "bottom") +
   guides(color = guide_legend(title = "Legend"))
 ```
+
+This data is consistent with statistical theory that explains how effect size and power are directly proportional. Simply, as effect size increases, so does the power. In addition, the sample average of 𝜇̂ across tests for which the null is rejected is  approximately equal to the true value of 𝜇 eventually when the graph equals out and as the true value of 𝜇 increases. 
+
 # Problem 3 
+
+The raw data relies on information collected by the Washington Post on the more than 52,000 criminal homicides that have occurred in the past decade in all states across the largest US cities. The data captures information on: the location of the killing; whether an arrest was made and; and basic demographic information about each victim.
 
 ```{r}
 library(purrr)
@@ -126,4 +132,24 @@ baltimore_tidy <- broom::tidy(baltimore_result) %>%
   select(estimate, conf.low, conf.high)
 ```
 
+## Running prop.test for each city and extract proportions and CIs
+
+```{r}
+results <- summary_data %>%
+  rowwise() %>%
+  mutate(prop_test = list(prop.test(unsolved_homicides, total_homicides))) %>%
+  mutate(tidy_result = list(broom::tidy(prop_test))) %>%
+  unnest(tidy_result) %>%
+  select(city_state, estimate, conf.low, conf.high)
+```
+
+## Create a plot
+```{r}
+ggplot(results, aes(x = reorder(city_state, estimate), y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high), width = 0.2) +
+  labs(x = "City, State", y = "Proportion of Unsolved Homicides") +
+  theme_minimal() +
+  coord_flip()
+```
 
